@@ -79,7 +79,7 @@ fun TimerSetting(
     }
     Column(
         modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         DurationDisplay(hours, selected, minutes, seconds, onSelect = { selected = it })
@@ -97,7 +97,8 @@ fun TimerOptions(onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         Icon(
             imageVector = Icons.Default.PlayCircleFilled, contentDescription = "Start Timer",
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colors.primary
         )
     }
 }
@@ -223,7 +224,7 @@ fun TimerSettingText(label: String, time: String, isSelected: Boolean, onSelect:
     )
 }
 
-@Preview(name = "Light theme", showSystemUi = true)
+@Preview(name = "Light theme", widthDp = 360, heightDp = 640)
 @Composable
 fun TimerSettingPreview() {
     MyTheme {
@@ -233,7 +234,7 @@ fun TimerSettingPreview() {
     }
 }
 
-@Preview(name = "Dark theme", showSystemUi = true)
+@Preview(name = "Dark theme", widthDp = 360, heightDp = 640)
 @Composable
 fun TimerSettingPreviewDark() {
     MyTheme(darkTheme = true) {
