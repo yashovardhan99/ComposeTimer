@@ -19,19 +19,22 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.androiddevchallenge.ui.layouts.TimerFace
+import com.example.androiddevchallenge.ui.layouts.TimerDisplay
+import com.example.androiddevchallenge.ui.layouts.TimerSetting
 import com.example.androiddevchallenge.ui.theme.MyTheme
-import java.time.Duration
 
 class MainActivity : AppCompatActivity() {
-    val viewModel: MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -40,16 +43,32 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colors.background,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    TimerFace(viewModel = viewModel)
+                    val timerState by viewModel.timerState.collectAsState()
+                    Crossfade(
+                        targetState = timerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { state ->
+                        when (state) {
+                            MainViewModel.TimerState.NOT_SET -> {
+                                TimerSetting(
+                                    onDurationSet = {
+                                        viewModel.setTimer(it)
+                                    }
+                                )
+                            }
+                            else -> {
+                                TimerDisplay(viewModel = viewModel)
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        viewModel.setTimer(Duration.ofMinutes(1))
-        viewModel.startTimer()
+    override fun onBackPressed() {
+        if (viewModel.timerState.value == MainViewModel.TimerState.NOT_SET) super.onBackPressed()
+        else viewModel.goToSettings()
     }
 }
 

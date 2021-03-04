@@ -78,7 +78,7 @@ fun TimerSetting(
         }
     }
     Column(
-        modifier,
+        modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
