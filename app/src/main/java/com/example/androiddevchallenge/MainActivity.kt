@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
                                 )
                             }
                             else -> {
-                                TimerDisplay(viewModel = viewModel)
+                                TimerDisplay(viewModel = viewModel, timerState = state)
                             }
                         }
                     }

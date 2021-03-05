@@ -60,7 +60,7 @@ class MainViewModel : ViewModel() {
         job = runTimer(_totalTime.value)
     }
 
-    fun restart() { // FIXME: 05/03/21  
+    fun restart() {
         _timerState.value = TimerState.PAUSED
         viewModelScope.launch {
             job?.cancelAndJoin()
@@ -78,14 +78,12 @@ class MainViewModel : ViewModel() {
 
     fun togglePause() {
         Log.d("MainViewModel", "Toggle pause called. Timer state = ${_timerState.value}")
-        viewModelScope.launch {
-            if (_timerState.value == TimerState.STARTED) {
-                job?.cancelAndJoin()
-                _timerState.value = TimerState.PAUSED
-            } else {
-                job?.cancelAndJoin()
-                job = runTimer(_timeRemaining.value)
-            }
+        if (_timerState.value == TimerState.STARTED) {
+            job?.cancel()
+            _timerState.value = TimerState.PAUSED
+        } else {
+            job?.cancel()
+            job = runTimer(_timeRemaining.value)
         }
     }
 
