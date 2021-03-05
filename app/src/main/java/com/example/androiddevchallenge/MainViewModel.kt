@@ -21,9 +21,9 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDateTime
@@ -65,7 +65,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             job?.cancelAndJoin()
             _timeRemaining.value = _totalTime.value
-            job = runTimer(_totalTime.value)
+            startTimer()
         }
     }
 
@@ -92,20 +92,18 @@ class MainViewModel : ViewModel() {
     private fun runTimer(totalRemaining: Duration): Job {
         val initialTime = LocalDateTime.now()
         return viewModelScope.launch {
-            viewModelScope.launch {
-                _timerState.value = TimerState.STARTED
-                while (_timeRemaining.value > Duration.ZERO && _timerState.value == TimerState.STARTED) {
-                    ensureActive()
-                    val elapsed = Duration.between(initialTime, LocalDateTime.now())
-                    _timeRemaining.value = (totalRemaining - elapsed).coerceAtLeast(Duration.ZERO)
-                    _delay.value = when {
-                        _timeRemaining.value.toMinutes() > 0 -> 500
-                        else -> 200
-                    }
-                    delay(_delay.value.toLong())
+            _timerState.value = TimerState.STARTED
+            while (_timeRemaining.value > Duration.ZERO && isActive) {
+                Log.d("MainViewModel", "RunTimer: Timer Started at: $initialTime")
+                val elapsed = Duration.between(initialTime, LocalDateTime.now())
+                _timeRemaining.value = (totalRemaining - elapsed).coerceAtLeast(Duration.ZERO)
+                _delay.value = when {
+                    _timeRemaining.value.toMinutes() > 0 -> 500
+                    else -> 200
                 }
-                if (_timerState.value == TimerState.STARTED) _timerState.value = TimerState.FINISHED
+                delay(_delay.value.toLong())
             }
+            if (isActive) _timerState.value = TimerState.FINISHED
         }
     }
 
