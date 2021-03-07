@@ -15,8 +15,12 @@
  */
 package com.example.androiddevchallenge
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.core.app.NotificationChannelCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -29,7 +33,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.CancellationException
 
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var job: Job? = null
 
     private val _timerState = MutableStateFlow(TimerState.NOT_SET)
@@ -101,8 +105,39 @@ class MainViewModel : ViewModel() {
                 }
                 delay(_delay.value.toLong())
             }
-            if (isActive) _timerState.value = TimerState.FINISHED
+            if (isActive) {
+                Log.d("MainViewModel", "Finished")
+                _timerState.value = TimerState.FINISHED
+                showFinishNotification()
+            }
         }
+    }
+
+    private fun showFinishNotification() {
+        val channel =
+            NotificationChannelCompat.Builder("timer", NotificationManagerCompat.IMPORTANCE_HIGH)
+                .setName("Timers")
+                .setVibrationEnabled(true)
+                .setShowBadge(true)
+                .build()
+        NotificationManagerCompat.from(getApplication()).createNotificationChannel(channel)
+        val notification = NotificationCompat.Builder(getApplication(), channel.id)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Timer completed!")
+            .setContentText(totalTime.value.format())
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(getApplication())
+            .notify(100, notification)
+    }
+
+    private fun Duration.format(): String {
+        val hours = toHours()
+        val minutes = minusHours(hours).toMinutes()
+        val seconds = minusHours(hours).minusMinutes(minutes).seconds
+        return String.format("%d:%02d:%02d", hours, minutes, seconds)
     }
 
     enum class TimerState {

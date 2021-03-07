@@ -15,6 +15,7 @@
  */
 package com.example.androiddevchallenge.ui.layouts
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -234,7 +235,7 @@ fun TimerFace(
             },
         contentAlignment = Alignment.Center
     ) {
-        val arcWidth by transition.animateDp() {
+        val arcWidth by transition.animateDp {
             when (it) {
                 MainViewModel.TimerState.NOT_SET -> 0.dp
                 MainViewModel.TimerState.STARTED -> 2.dp
@@ -365,7 +366,7 @@ fun TimerText(label: String, time: Int, padNeeded: Int, size: Int, animTime: Int
 @Preview(name = "Light theme", widthDp = 360, heightDp = 640)
 @Composable
 fun TimerDisplayPreviewLight() {
-    val viewModel = MainViewModel()
+    val viewModel = MainViewModel(application = Application())
     viewModel.setTimer(Duration.ofMinutes(1))
     MyTheme {
         Surface(color = MaterialTheme.colors.background) {
@@ -388,7 +389,7 @@ fun TimerDisplayPreviewLight() {
 @Preview(name = "Dark theme", widthDp = 360, heightDp = 640)
 @Composable
 fun TimerDisplayPreviewDark() {
-    val viewModel = MainViewModel()
+    val viewModel = MainViewModel(Application())
     var currentState by remember { mutableStateOf(MainViewModel.TimerState.NOT_SET) }
     val transition = updateTransition(targetState = currentState)
     val timerState by viewModel.timerState.collectAsState()
