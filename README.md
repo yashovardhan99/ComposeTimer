@@ -1,18 +1,16 @@
-# Put title of your app here
+# Compose Timer
 
-<!--- Replace <OWNER> with your Github Username and <REPOSITORY> with the name of your repository. -->
-<!--- You can find both of these in the url bar when you open your repository in github. -->
 ![Workflow result](https://github.com/yashovardhan99/ComposeTimer/workflows/Check/badge.svg)
+
+This app is a submission for the [#AndroidDevChallenge](https://developer.android.com/dev-challenge)
+Week 2
 
 ## :scroll: Description
 
-<!--- Describe your app in one or two sentences -->
-ComposeTimer is a simple and easy to use Timer with extensive animations.
+Compose Timer is a simple and easy to use Timer with extensive animations.
 
 ## :bulb: Motivation and Context
 
-<!--- Optionally point readers to interesting parts of your submission. -->
-<!--- What are you especially proud of? -->
 I wanted to try out some complex animations as part of Compose. I have been able to achieve quite a
 bit of success in that regard with this app.
 
@@ -29,7 +27,7 @@ Do try out the app to watch the animations in action!
 ## License
 
 ```
-Copyright 2020 The Android Open Source Project
+Copyright 2021 Yashovardhan Dhanania
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
