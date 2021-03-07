@@ -19,12 +19,17 @@ import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Transition
+import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -51,7 +56,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -72,24 +79,23 @@ import java.time.Duration
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun TimerDisplay(viewModel: MainViewModel, timerState: MainViewModel.TimerState) {
+fun TimerDisplay(viewModel: MainViewModel, transition: Transition<MainViewModel.TimerState>) {
     Column(
         Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val isPaused by derivedStateOf {
-            timerState == MainViewModel.TimerState.PAUSED
-        }
         val totalDuration by viewModel.totalTime.collectAsState()
         val timeRemaining by viewModel.timeRemaining.collectAsState()
         val animTime by viewModel.updateDelay.collectAsState()
+
         TimerFace(
             totalDuration = totalDuration,
             timeRemaining = timeRemaining,
-            timerState = timerState,
             animTime = animTime,
-            togglePause = viewModel::togglePause
+            togglePause = viewModel::togglePause,
+            modifier = Modifier,
+            transition = transition
         )
         Row(horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally)) {
             IconButton(
@@ -102,13 +108,13 @@ fun TimerDisplay(viewModel: MainViewModel, timerState: MainViewModel.TimerState)
                     modifier = Modifier.size(32.dp)
                 )
             }
-            AnimatedVisibility(visible = timerState != MainViewModel.TimerState.FINISHED) {
+            AnimatedVisibility(visible = transition.targetState != MainViewModel.TimerState.FINISHED) {
                 IconButton(
                     onClick = { viewModel.togglePause() },
                     Modifier.wrapContentSize()
                 ) {
-                    Crossfade(targetState = isPaused) { isPaused ->
-                        if (isPaused) {
+                    Crossfade(targetState = transition.targetState) { state ->
+                        if (state == MainViewModel.TimerState.PAUSED) {
                             Icon(
                                 imageVector = Icons.Default.PlayCircleFilled,
                                 contentDescription = null,
@@ -144,10 +150,10 @@ fun TimerDisplay(viewModel: MainViewModel, timerState: MainViewModel.TimerState)
 fun TimerFace(
     totalDuration: Duration,
     timeRemaining: Duration,
-    timerState: MainViewModel.TimerState,
     animTime: Int,
     togglePause: () -> Unit,
     modifier: Modifier = Modifier,
+    transition: Transition<MainViewModel.TimerState>
 ) {
     Log.d("TimerFace", "Total duration = $totalDuration")
     Log.d("TimerFace", "Time remaining = $timeRemaining")
@@ -165,7 +171,6 @@ fun TimerFace(
         1 - timeRemaining.toNanos().toFloat() / totalDuration.toNanos().toFloat()
             .coerceAtLeast(1f)
     }
-    Log.d("TimerFace", "H = $hours M = $minutes S = $seconds")
     val progress by animateFloatAsState(
         targetValue = rawProgress,
         animationSpec = tween(
@@ -177,31 +182,46 @@ fun TimerFace(
     val pausedColor = MaterialTheme.colors.error
     val primaryColor = MaterialTheme.colors.primary
     val secondaryColor = MaterialTheme.colors.secondary
-    val rawColor by derivedStateOf {
-        when (timerState) {
-            MainViewModel.TimerState.PAUSED -> pausedColor
+    val progressColor by transition.animateColor {
+        when (it) {
+            MainViewModel.TimerState.NOT_SET -> pausedColor
             MainViewModel.TimerState.STARTED -> primaryColor
+            MainViewModel.TimerState.PAUSED -> pausedColor
             MainViewModel.TimerState.FINISHED -> secondaryColor
-            else -> Color.Red
         }
     }
-    val progressColor by animateColorAsState(
-        targetValue = rawColor, animationSpec = tween(1000)
-    )
-    Log.d("TimerDisplay", "State = $timerState Color = $progressColor")
-    val rotation by animateFloatAsState(
-        targetValue = 6 * totalDuration.seconds * progress,
-        animationSpec = when (timerState) {
-            MainViewModel.TimerState.NOT_SET -> tween()
-            MainViewModel.TimerState.STARTED -> tween(animTime, easing = LinearEasing)
-            MainViewModel.TimerState.PAUSED -> tween(animTime, easing = LinearEasing)
-            MainViewModel.TimerState.FINISHED -> spring()
+    val arcColor by transition.animateColor {
+        when (it) {
+            MainViewModel.TimerState.NOT_SET -> pausedColor
+            MainViewModel.TimerState.STARTED -> Color.Blue
+            MainViewModel.TimerState.PAUSED -> pausedColor
+            MainViewModel.TimerState.FINISHED -> secondaryColor
         }
-    )
-    Log.d(
-        "TimerDisplay",
-        "State = $timerState progress = $progress Raw progress = $rawProgress rotation = $rotation animTime = $animTime total duration = ${totalDuration.seconds}"
-    )
+    }
+    val rotation by transition.animateFloat(
+        transitionSpec = {
+            when {
+                initialState == targetState -> tween(animTime)
+                targetState == MainViewModel.TimerState.STARTED -> tween(
+                    animTime,
+                    easing = LinearEasing
+                )
+                targetState == MainViewModel.TimerState.PAUSED -> tween(
+                    1000,
+                    easing = FastOutLinearInEasing
+                )
+                targetState == MainViewModel.TimerState.FINISHED -> tween(1000)
+                else -> spring()
+            }
+        }
+    ) {
+        when (it) {
+            MainViewModel.TimerState.NOT_SET -> 0f
+            MainViewModel.TimerState.STARTED -> 6 * totalDuration.seconds * progress
+            MainViewModel.TimerState.PAUSED -> 6 * totalDuration.seconds * progress - 360
+            MainViewModel.TimerState.FINISHED -> 6 * totalDuration.seconds + 360f
+        }
+    }
     Box(
         modifier = modifier
             .sizeIn(minWidth = 200.dp, minHeight = 200.dp)
@@ -214,6 +234,14 @@ fun TimerFace(
             },
         contentAlignment = Alignment.Center
     ) {
+        val arcWidth by transition.animateDp() {
+            when (it) {
+                MainViewModel.TimerState.NOT_SET -> 0.dp
+                MainViewModel.TimerState.STARTED -> 2.dp
+                MainViewModel.TimerState.PAUSED -> 4.dp
+                MainViewModel.TimerState.FINISHED -> 4.dp
+            }
+        }
         CircularProgressIndicator(
             progress = progress,
             Modifier
@@ -222,13 +250,13 @@ fun TimerFace(
                     val arcSize = Size(size.width - 2 * topLeft.x, size.height - 2 * topLeft.y)
                     for (i in 0 until 6) {
                         drawArc(
-                            Color.Blue,
+                            color = arcColor,
                             startAngle = rotation * 20 + 60 * i,
                             sweepAngle = 30f,
                             useCenter = false,
                             topLeft = topLeft,
                             size = arcSize,
-                            style = Stroke(width = 2.dp.toPx())
+                            style = Stroke(width = arcWidth.toPx())
                         )
                     }
                 }
@@ -341,12 +369,17 @@ fun TimerDisplayPreviewLight() {
     viewModel.setTimer(Duration.ofMinutes(1))
     MyTheme {
         Surface(color = MaterialTheme.colors.background) {
+            var currentState by remember { mutableStateOf(MainViewModel.TimerState.NOT_SET) }
+            val transition = updateTransition(targetState = currentState)
+            val timerState by viewModel.timerState.collectAsState()
+            currentState = timerState
             TimerFace(
                 totalDuration = viewModel.totalTime.value,
                 timeRemaining = viewModel.timeRemaining.value,
-                timerState = viewModel.timerState.value,
                 animTime = viewModel.updateDelay.value,
-                togglePause = { viewModel.togglePause() }
+                togglePause = { viewModel.togglePause() },
+                modifier = Modifier,
+                transition = transition
             )
         }
     }
@@ -356,15 +389,20 @@ fun TimerDisplayPreviewLight() {
 @Composable
 fun TimerDisplayPreviewDark() {
     val viewModel = MainViewModel()
+    var currentState by remember { mutableStateOf(MainViewModel.TimerState.NOT_SET) }
+    val transition = updateTransition(targetState = currentState)
+    val timerState by viewModel.timerState.collectAsState()
+    currentState = timerState
     viewModel.setTimer(Duration.ofSeconds(50))
     MyTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colors.background) {
             TimerFace(
                 totalDuration = viewModel.totalTime.value,
                 timeRemaining = viewModel.timeRemaining.value,
-                timerState = viewModel.timerState.value,
                 animTime = viewModel.updateDelay.value,
-                togglePause = { viewModel.togglePause() }
+                togglePause = { viewModel.togglePause() },
+                modifier = Modifier,
+                transition = transition
             )
         }
     }

@@ -20,6 +20,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -27,6 +28,9 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.androiddevchallenge.ui.layouts.TimerDisplay
@@ -43,7 +47,10 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colors.background,
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    var currentState by remember { mutableStateOf(MainViewModel.TimerState.NOT_SET) }
+                    val transition = updateTransition(targetState = currentState)
                     val timerState by viewModel.timerState.collectAsState()
+                    currentState = timerState
                     Crossfade(
                         targetState = timerState,
                         modifier = Modifier.fillMaxSize()
@@ -57,7 +64,7 @@ class MainActivity : AppCompatActivity() {
                                 )
                             }
                             else -> {
-                                TimerDisplay(viewModel = viewModel, timerState = state)
+                                TimerDisplay(viewModel = viewModel, transition = transition)
                             }
                         }
                     }
