@@ -70,6 +70,7 @@ import com.example.androiddevchallenge.MainViewModel
 import com.example.androiddevchallenge.ui.theme.MyTheme
 import java.time.Duration
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun TimerDisplay(viewModel: MainViewModel, timerState: MainViewModel.TimerState) {
     Column(
@@ -101,25 +102,27 @@ fun TimerDisplay(viewModel: MainViewModel, timerState: MainViewModel.TimerState)
                     modifier = Modifier.size(32.dp)
                 )
             }
-            IconButton(
-                onClick = { viewModel.togglePause() },
-                Modifier.wrapContentSize()
-            ) {
-                Crossfade(targetState = isPaused) { isPaused ->
-                    if (isPaused) {
-                        Icon(
-                            imageVector = Icons.Default.PlayCircleFilled,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.PauseCircleFilled,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
+            AnimatedVisibility(visible = timerState != MainViewModel.TimerState.FINISHED) {
+                IconButton(
+                    onClick = { viewModel.togglePause() },
+                    Modifier.wrapContentSize()
+                ) {
+                    Crossfade(targetState = isPaused) { isPaused ->
+                        if (isPaused) {
+                            Icon(
+                                imageVector = Icons.Default.PlayCircleFilled,
+                                contentDescription = null,
+                                tint = MaterialTheme.colors.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.PauseCircleFilled,
+                                contentDescription = null,
+                                tint = MaterialTheme.colors.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -217,24 +220,17 @@ fun TimerFace(
                 .drawBehind {
                     val topLeft = Offset(-size.minDimension / 10f, -size.minDimension / 10f)
                     val arcSize = Size(size.width - 2 * topLeft.x, size.height - 2 * topLeft.y)
-                    drawArc(
-                        Color.Blue,
-                        startAngle = rotation * 10,
-                        sweepAngle = 30f,
-                        useCenter = false,
-                        topLeft = topLeft,
-                        size = arcSize,
-                        style = Stroke(width = 4.dp.toPx())
-                    )
-                    drawArc(
-                        Color.Blue,
-                        startAngle = 180 + rotation * 10,
-                        sweepAngle = 30f,
-                        useCenter = false,
-                        topLeft = topLeft,
-                        size = arcSize,
-                        style = Stroke(width = 4.dp.toPx())
-                    )
+                    for (i in 0 until 6) {
+                        drawArc(
+                            Color.Blue,
+                            startAngle = rotation * 20 + 60 * i,
+                            sweepAngle = 30f,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = Stroke(width = 2.dp.toPx())
+                        )
+                    }
                 }
                 .drawBehind {
                     drawCircle(
